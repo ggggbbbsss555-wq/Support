@@ -347,6 +347,43 @@ html,body{
   background:linear-gradient(180deg,#ffb820 0%,#dd9900 100%);
 }
 
+/* ===== Floating Support Button (Icon Only) ===== */
+.floating-support{
+  position:fixed;
+  bottom:24px;
+  right:24px;
+  width:56px;
+  height:56px;
+  border-radius:50%;
+  background:linear-gradient(180deg,#1a1a1a 0%,#0d0d0d 100%);
+  border:1px solid #2a2a2a;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  z-index:500;
+  transition:all 0.25s ease;
+  -webkit-tap-highlight-color:transparent;
+  box-shadow:0 4px 16px rgba(0,0,0,0.5);
+}
+.floating-support:hover{
+  border-color:#00d2ff;
+  transform:translateY(-2px);
+  box-shadow:0 8px 24px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,210,255,0.2);
+}
+.floating-support:active{
+  transform:translateY(0) scale(0.95);
+}
+.floating-support svg{
+  width:24px;
+  height:24px;
+  stroke:#00d2ff;
+  fill:none;
+  stroke-width:2.5;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
 /* ===== Modal ===== */
 .modal-overlay{
   position:fixed;top:0;left:0;right:0;bottom:0;
@@ -458,12 +495,15 @@ html,body{
 
 .chat-header{
   flex-shrink:0;
+  position:sticky;
+  top:0;
   display:flex;align-items:center;justify-content:space-between;
   gap:10px;
   padding:12px 14px;
   background:linear-gradient(180deg,#0d0d0d 0%,#000 100%);
   border-bottom:1px solid #1f1f1f;
   min-height:60px;
+  z-index:10;
 }
 .chat-header-left{
   display:flex;align-items:center;gap:10px;
@@ -789,6 +829,14 @@ html,body{
   .faq-a-inner{padding:0 14px 12px;font-size:11.5px}
   .footer-note{font-size:10px;padding:16px}
   
+  .floating-support{
+    width:50px;
+    height:50px;
+    bottom:18px;
+    right:16px;
+  }
+  .floating-support svg{width:22px;height:22px}
+  
   .modal{padding:20px}
   .modal-title{font-size:15px}
   .modal-btn{padding:11px 16px;font-size:12.5px}
@@ -822,6 +870,14 @@ html,body{
   .plans-hero-title{font-size:18px}
   .plan-card{padding:16px}
   .plan-price-amount{font-size:26px}
+  
+  .floating-support{
+    width:46px;
+    height:46px;
+    bottom:14px;
+    right:12px;
+  }
+  .floating-support svg{width:20px;height:20px}
 }
 
 @supports (padding: max(0px)){
@@ -833,6 +889,9 @@ html,body{
   }
   .chat-input-area{
     padding-bottom:max(12px, env(safe-area-inset-bottom));
+  }
+  .floating-support{
+    bottom:max(24px, env(safe-area-inset-bottom));
   }
 }
 </style>
@@ -1065,10 +1124,15 @@ html,body{
       <!-- Footer Note -->
       <div class="footer-note">
         All prices are in USD. Taxes may apply based on your region.<br>
-        Need help? <a href="#">Contact our sales team</a>
+        Need help? <a href="#" onclick="openChat(); return false;">Contact our sales team</a>
       </div>
 
     </div>
+  </div>
+
+  <!-- Floating Support Button (Icon Only) -->
+  <div class="floating-support" onclick="openChat()">
+    <svg viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
   </div>
 
 </div>
@@ -1227,7 +1291,7 @@ function sendMessage(){
 
   const messagesContainer = document.getElementById('chatMessages');
   const now = new Date();
-  const timeStr = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const timeStr = now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
 
   let messageHTML = '';
   
@@ -1256,7 +1320,6 @@ function sendMessage(){
   
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-  // Simulate support response
   setTimeout(()=>{
     const responses = [
       "Thank you for your message! Our team will get back to you shortly.",
@@ -1265,13 +1328,14 @@ function sendMessage(){
       "Thanks for reaching out. We're here to help!"
     ];
     const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+    const responseTime = new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
     
     const supportMessage = `
       <div class="chat-message support">
         <div class="chat-message-avatar">S</div>
         <div class="chat-message-content">
           <div class="chat-message-bubble">${randomResponse}</div>
-          <div class="chat-message-time">Just now</div>
+          <div class="chat-message-time">${responseTime}</div>
         </div>
       </div>
     `;
@@ -1327,13 +1391,11 @@ function escapeHtml(text){
   return div.innerHTML;
 }
 
-/* Auto-resize textarea */
 document.getElementById('chatInput').addEventListener('input', function(){
   this.style.height = 'auto';
   this.style.height = Math.min(this.scrollHeight, 100) + 'px';
 });
 
-/* Enter to send (Shift+Enter for new line) */
 document.getElementById('chatInput').addEventListener('keydown', function(e){
   if(e.key === 'Enter' && !e.shiftKey){
     e.preventDefault();
@@ -1341,14 +1403,12 @@ document.getElementById('chatInput').addEventListener('keydown', function(e){
   }
 });
 
-/* Close modal on overlay click */
 document.getElementById('purchaseModal').addEventListener('click', function(e){
   if(e.target === this){
     closePurchaseModal();
   }
 });
 
-/* FAQ */
 function toggleFaq(el){
   const item = el.parentElement;
   const answer = item.querySelector('.faq-a');
@@ -1363,7 +1423,6 @@ function toggleFaq(el){
   }
 }
 
-/* ===== Persistence ===== */
 function saveState(){
   try{
     localStorage.setItem('botpanel.plans', JSON.stringify({
@@ -1380,7 +1439,6 @@ function loadState(){
   }catch(e){}
 }
 
-/* ===== Init ===== */
 loadState();
 </script>
 </body>

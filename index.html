@@ -107,17 +107,6 @@ body{background:var(--bg);color:var(--text)}
 .plan-card[data-plan="pro"] .plan-cta{background:linear-gradient(180deg,#ab82ff 0%,#8a5ce0 100%);border-color:#ab82ff;color:#000}
 .plan-card[data-plan="elite"] .plan-cta{background:linear-gradient(180deg,var(--gold) 0%,#cc8800 100%);border-color:var(--gold);color:#000}
 
-/* ===== Floating Support Button ===== */
-.floating-support{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,var(--bg4) 0%,var(--bg3) 100%);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:500;transition:all 0.3s ease;box-shadow:0 4px 16px rgba(0,0,0,0.5)}
-.floating-support:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,210,255,0.2)}
-.floating-support:active{transform:translateY(0) scale(0.95)}
-.floating-support.has-message{animation:supportPulse 1.5s ease-in-out 3}
-.floating-support.hidden{opacity:0;pointer-events:none;transform:scale(0.8)}
-@keyframes supportPulse{
-  0%,100%{box-shadow:0 4px 16px rgba(0,0,0,0.5), 0 0 0 0 rgba(0,210,255,0.4)}
-  50%{box-shadow:0 4px 16px rgba(0,0,0,0.5), 0 0 0 14px rgba(0,210,255,0)}
-}
-.floating-support svg{width:24px;height:24px;stroke:var(--accent);fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
 
 /* ============================================= */
 /* ===== DISCOUNT MODAL (Compact & Matching) ==== */
@@ -643,8 +632,6 @@ body{background:var(--bg);color:var(--text)}
   .faq-q{padding:12px 14px;font-size:12.5px}
   .faq-a-inner{padding:0 14px 12px;font-size:11.5px}
   .footer-note{font-size:10px;padding:16px}
-  .floating-support{width:50px;height:50px;bottom:18px;right:16px}
-  .floating-support svg{width:22px;height:22px}
   
   .discount-modal{max-width:360px}
   .discount-modal-content{padding:20px 18px}
@@ -684,8 +671,6 @@ body{background:var(--bg);color:var(--text)}
   .plans-hero-title{font-size:18px}
   .plan-card{padding:16px}
   .plan-price-amount{font-size:26px}
-  .floating-support{width:46px;height:46px;bottom:14px;right:12px}
-  .floating-support svg{width:20px;height:20px}
   .discount-modal-content{padding:18px 16px}
   .discount-gift{width:44px;height:44px}
   .discount-gift svg{width:22px;height:22px}
@@ -858,10 +843,6 @@ body{background:var(--bg);color:var(--text)}
     </div>
   </div>
 
-  <!-- Floating Support Button -->
-  <div class="floating-support" id="floatingSupport" onclick="openChat()">
-    <svg viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
-  </div>
 
 </div>
 
@@ -1055,7 +1036,6 @@ const chatOverlay = document.getElementById('chatOverlay');
 const chatMessagesEl = document.getElementById('chatMessages');
 const chatInput = document.getElementById('chatInput');
 const chatSendBtn = document.getElementById('chatSendBtn');
-const floatingSupport = document.getElementById('floatingSupport');
 
 function autoGrowTextarea(){
   chatInput.style.height = 'auto';
@@ -1069,8 +1049,6 @@ function openChat(){
   chatOverlay.classList.add('visible');
   document.body.style.overflow = 'hidden';
   
-  // Hide floating support button
-  floatingSupport.classList.add('hidden');
   
   if(State.supportFollowUpTimer) clearTimeout(State.supportFollowUpTimer);
   
@@ -1107,8 +1085,6 @@ function closeChat(){
   document.body.style.overflow = '';
   detachViewportTracker(chatOverlay);
   
-  // Show floating support button again
-  floatingSupport.classList.remove('hidden');
   
   if(State.supportFollowUpTimer){
     clearTimeout(State.supportFollowUpTimer);

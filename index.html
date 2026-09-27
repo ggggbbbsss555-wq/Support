@@ -509,6 +509,75 @@ body{background:var(--bg);color:var(--text)}
 }
 .chat-message-time{font-size:10px;opacity:0.7;margin-top:3px}
 
+/* ===== Payment Method Options ===== */
+.chat-message.has-options{max-width:92%}
+.chat-options{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.chat-option-btn{
+  display:flex;align-items:center;gap:10px;width:100%;
+  padding:10px 12px;background:var(--bg4);border:1px solid var(--border2);
+  border-radius:12px;cursor:pointer;color:var(--text);
+  font-size:13.5px;font-weight:600;text-align:left;
+  transition:all 0.15s ease;font-family:inherit;
+}
+.chat-option-btn:hover{border-color:var(--accent);background:var(--hover);box-shadow:0 0 0 1px rgba(0,210,255,0.2)}
+.chat-option-btn:active{transform:scale(0.98)}
+.pay-badge{
+  width:32px;height:32px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:800;letter-spacing:-0.5px;flex-shrink:0;
+  text-transform:uppercase;
+}
+.pay-badge.binance{background:#F3BA2F;color:#1A1A1A}
+.pay-badge.trc20{background:#EF0027;color:#fff}
+.pay-badge.bep20{background:#F3BA2F;color:#1A1A1A}
+.chat-option-info{flex:1;min-width:0;display:flex;flex-direction:column}
+.chat-option-title{font-weight:700;font-size:13.5px;color:var(--text)}
+.chat-option-sub{font-size:10.5px;color:var(--text3);margin-top:1px}
+.chat-option-arrow{color:var(--text3);flex-shrink:0;display:flex;align-items:center}
+.chat-option-arrow svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ===== Payment Instruction Card ===== */
+.chat-message.card{padding:0;background:transparent;border:none;max-width:92%}
+.chat-message.card .chat-message-time{padding:0 4px;margin-top:6px;align-self:flex-end;width:100%;text-align:right}
+.chat-card{
+  border-radius:14px;background:var(--bg3);
+  border:1px solid var(--border2);overflow:hidden;
+}
+.chat-card-header{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;
+  background:linear-gradient(135deg,rgba(0,210,255,0.08),rgba(0,153,204,0.02));
+  border-bottom:1px solid var(--border);
+}
+.chat-card-header .pay-badge{width:28px;height:28px;font-size:9px;border-radius:7px}
+.chat-card-title{font-weight:700;font-size:13.5px;color:var(--text)}
+.chat-card-body{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.chat-card-row{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:8px 10px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:8px;
+}
+.chat-card-row-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;flex-shrink:0;font-weight:600}
+.chat-card-row-value{
+  font-size:11.5px;font-weight:600;color:var(--text);
+  font-family:'Sarasa Mono SC','Courier New',monospace;
+  word-break:break-all;text-align:right;max-width:60%;
+}
+.chat-card-row-actions{display:flex;align-items:center;gap:6px;min-width:0}
+.chat-card-copy{
+  background:transparent;border:none;color:var(--accent);
+  cursor:pointer;padding:4px 6px;border-radius:6px;flex-shrink:0;
+  transition:background 0.15s ease;display:flex;align-items:center;
+}
+.chat-card-copy:hover{background:var(--hover)}
+.chat-card-copy svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.chat-card-hint{
+  font-size:11px;color:var(--text2);line-height:1.5;
+  padding:8px 10px;background:rgba(0,210,255,0.04);
+  border:1px dashed rgba(0,210,255,0.25);border-radius:8px;
+}
+.chat-card-hint b{color:var(--accent);font-weight:700}
+
 .chat-input-area{
   position:relative;
   display:flex;align-items:flex-end;gap:8px;
@@ -929,7 +998,7 @@ body{background:var(--bg);color:var(--text)}
     <button class="chat-back" id="chatBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
     <div class="chat-user-info">
       <div class="chat-user-details">
-        <div class="chat-user-name">Support Team</div>
+        <div class="chat-user-name">Crypto Payments</div>
         <div class="chat-user-status">
           <span class="dot"></span>
           <span>Online</span>
@@ -974,13 +1043,37 @@ const ICONS = {
   sparkles: '<svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle;display:inline-block" viewBox="0 0 24 24"><path d="M12 3l1.9 5.8L20 10l-5.8 1.9L12 18l-1.9-5.8L4 10l5.8-1.9z"/></svg>'
 };
 
+/* ===== Payment Configuration =====
+   NOTE: Replace placeholder values with your real wallet addresses / Binance Pay ID.
+   The verification code is generated client-side (simulating a database-generated code).
+   To use a real backend, replace `generateCode()` with a fetch() call to your API.
+*/
+const PAYMENT_CONFIG = {
+  binance:{
+    label:'Binance Pay', badgeClass:'binance', badgeText:'BNB',
+    subtitle:'Pay via Binance Pay ID',
+    payUser:'YOUR_BINANCE_PAY_ID'  // ← ضع هنا يوزر Binance Pay الخاص بك
+  },
+  trc20:{
+    label:'USDT TRC20', badgeClass:'trc20', badgeText:'T',
+    subtitle:'USDT on TRON network',
+    wallet:'TXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'  // ← ضع هنا عنوان TRC20
+  },
+  bep20:{
+    label:'USDT BEP20', badgeClass:'bep20', badgeText:'BSC',
+    subtitle:'USDT on BSC network',
+    wallet:'0xXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'  // ← ضع هنا عنوان BEP20
+  }
+};
+
 /* ===== State ===== */
 const State = {
   selectedPlan:'pro',
   currentPurchasePlan:null,
   uploadedImage:null,
   chatMessages:[],
-  supportFollowUpTimer:null
+  supportFollowUpTimer:null,
+  selectedPaymentMethod:null
 };
 
 /* ===== Toast ===== */
@@ -1049,24 +1142,21 @@ function openChat(){
   chatOverlay.classList.add('visible');
   document.body.style.overflow = 'hidden';
   
-  
   if(State.supportFollowUpTimer) clearTimeout(State.supportFollowUpTimer);
   
   if(State.chatMessages.length === 0){
-    const welcome = {txt:'Hello! ' + ICONS.wave + ' Welcome to our support. How can I help you today?', s:false, tm:nowTime()};
-    State.chatMessages.push(welcome);
-    
-    State.supportFollowUpTimer = setTimeout(()=>{
-      if(!chatOverlay.classList.contains('visible')) return;
-      
-      const followUp = {
-        txt: ICONS.bulb + ' Just a heads up — I noticed you were checking out our subscription plans. If you have any questions about features, pricing, or need help choosing the right plan for you, I\'m here to help! Feel free to ask anything.',
-        s:false,
-        tm:nowTime()
-      };
-      State.chatMessages.push(followUp);
-      appendChatMsg(followUp);
-    }, 5000);
+    // Initial message: payment method selection buttons (replaces old welcome)
+    const optionsHtml =
+      '<div class="chat-options">' +
+        buildOptionBtn('binance') +
+        buildOptionBtn('trc20') +
+        buildOptionBtn('bep20') +
+      '</div>';
+    const intro = {
+      txt:'<b>Select a payment method</b> to continue with your subscription:',
+      s:false, tm:nowTime(), extra:optionsHtml
+    };
+    State.chatMessages.push(intro);
   }
   
   renderChatMsgs();
@@ -1076,6 +1166,133 @@ function openChat(){
     setTimeout(()=>chatInput.focus({preventScroll:true}), 300);
   });
 }
+
+/* ===== Payment method helpers ===== */
+function buildOptionBtn(method){
+  const cfg = PAYMENT_CONFIG[method];
+  if(!cfg) return '';
+  return '<button class="chat-option-btn" onclick="selectPaymentMethod(\''+method+'\')">' +
+    '<span class="pay-badge '+cfg.badgeClass+'">'+cfg.badgeText+'</span>' +
+    '<span class="chat-option-info">' +
+      '<span class="chat-option-title">'+cfg.label+'</span>' +
+      '<span class="chat-option-sub">'+cfg.subtitle+'</span>' +
+    '</span>' +
+    '<span class="chat-option-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>' +
+  '</button>';
+}
+
+function generateCode(len){
+  // Simulates a database-generated verification code.
+  // Replace with a fetch() to your backend in production.
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for(let i=0;i<len;i++) s += chars.charAt(Math.floor(Math.random()*chars.length));
+  return 'PAY-' + s;
+}
+
+function selectPaymentMethod(method){
+  const cfg = PAYMENT_CONFIG[method];
+  if(!cfg) return;
+  State.selectedPaymentMethod = method;
+  
+  // Push a user-side acknowledgment that they selected this method
+  const userAck = {txt:'I want to pay with <b>'+cfg.label+'</b>', s:true, tm:nowTime()};
+  State.chatMessages.push(userAck);
+  appendChatMsg(userAck);
+  
+  // After a short delay, push the payment instruction card
+  setTimeout(()=>{
+    const copySvg = '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+    let cardHtml = '';
+    if(method === 'binance'){
+      const code = generateCode(6);
+      cardHtml =
+        '<div class="chat-card">' +
+          '<div class="chat-card-header">' +
+            '<span class="pay-badge '+cfg.badgeClass+'">'+cfg.badgeText+'</span>' +
+            '<span class="chat-card-title">'+cfg.label+'</span>' +
+          '</div>' +
+          '<div class="chat-card-body">' +
+            '<div class="chat-card-row">' +
+              '<span class="chat-card-row-label">Binance Pay ID</span>' +
+              '<div class="chat-card-row-actions">' +
+                '<span class="chat-card-row-value">'+escapeHtml(cfg.payUser)+'</span>' +
+                '<button class="chat-card-copy" data-copy="'+escapeHtml(cfg.payUser)+'">'+copySvg+'</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="chat-card-row">' +
+              '<span class="chat-card-row-label">Verification Code</span>' +
+              '<div class="chat-card-row-actions">' +
+                '<span class="chat-card-row-value" style="color:var(--accent)">'+code+'</span>' +
+                '<button class="chat-card-copy" data-copy="'+escapeHtml(code)+'">'+copySvg+'</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="chat-card-hint">Send the <b>Verification Code</b> above via Binance Pay to the <b>Binance Pay ID</b> shown on the left. Once the transfer is done, type "sent" or send a screenshot here to confirm.</div>' +
+          '</div>' +
+        '</div>';
+    } else {
+      const network = (method === 'trc20') ? 'TRON (TRC20)' : 'BSC (BEP20)';
+      cardHtml =
+        '<div class="chat-card">' +
+          '<div class="chat-card-header">' +
+            '<span class="pay-badge '+cfg.badgeClass+'">'+cfg.badgeText+'</span>' +
+            '<span class="chat-card-title">'+cfg.label+'</span>' +
+          '</div>' +
+          '<div class="chat-card-body">' +
+            '<div class="chat-card-row">' +
+              '<span class="chat-card-row-label">Network</span>' +
+              '<span class="chat-card-row-value">'+network+'</span>' +
+            '</div>' +
+            '<div class="chat-card-row">' +
+              '<span class="chat-card-row-label">Wallet</span>' +
+              '<div class="chat-card-row-actions">' +
+                '<span class="chat-card-row-value">'+escapeHtml(cfg.wallet)+'</span>' +
+                '<button class="chat-card-copy" data-copy="'+escapeHtml(cfg.wallet)+'">'+copySvg+'</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="chat-card-hint">Send your <b>USDT</b> to the wallet address above, then attach a screenshot of the transaction in this chat to confirm.</div>' +
+          '</div>' +
+        '</div>';
+    }
+    const cardMsg = {card:cardHtml, s:false, tm:nowTime()};
+    State.chatMessages.push(cardMsg);
+    appendChatMsg(cardMsg);
+  }, 600);
+}
+
+function copyToClipboard(btn, text){
+  const done = ()=>{ showToast('Copied!', ICONS.check); };
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text, done));
+    } else {
+      fallbackCopy(text, done);
+    }
+  }catch(e){
+    fallbackCopy(text, done);
+  }
+}
+function fallbackCopy(text, done){
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    if(done) done();
+  }catch(e){ showToast('Copy failed'); }
+}
+
+// Event delegation for copy buttons (safer than inline onclick with user-provided values)
+document.addEventListener('click', function(e){
+  const btn = e.target.closest('.chat-card-copy');
+  if(!btn) return;
+  const text = btn.getAttribute('data-copy');
+  if(text) copyToClipboard(btn, text);
+});
 
 function closeChat(){
   chatOverlay.classList.remove('visible');
@@ -1098,9 +1315,16 @@ function renderChatMsgs(){
   let html = '';
   State.chatMessages.forEach(m=>{
     let content = '';
-    if(m.img) content += '<img src="'+m.img+'" alt="image"/>';
-    if(m.txt) content += '<div>'+m.txt+'</div>';
-    html += '<div class="chat-message '+(m.s?'sent':'received')+'">'+content+'<div class="chat-message-time">'+m.tm+'</div></div>';
+    let extraClass = '';
+    if(m.card){
+      content += m.card;
+      extraClass = ' card';
+    } else {
+      if(m.img) content += '<img src="'+m.img+'" alt="image"/>';
+      if(m.txt) content += '<div>'+m.txt+'</div>';
+      if(m.extra){ content += m.extra; extraClass += ' has-options'; }
+    }
+    html += '<div class="chat-message '+(m.s?'sent':'received')+extraClass+'">'+content+'<div class="chat-message-time">'+m.tm+'</div></div>';
   });
   chatMessagesEl.innerHTML = html;
   requestAnimationFrame(()=>chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight);
@@ -1108,10 +1332,17 @@ function renderChatMsgs(){
 
 function appendChatMsg(m){
   const div = document.createElement('div');
-  div.className = 'chat-message '+(m.s?'sent':'received');
   let content = '';
-  if(m.img) content += '<img src="'+m.img+'" alt="image"/>';
-  if(m.txt) content += '<div>'+m.txt+'</div>';
+  let extraClass = '';
+  if(m.card){
+    content += m.card;
+    extraClass = ' card';
+  } else {
+    if(m.img) content += '<img src="'+m.img+'" alt="image"/>';
+    if(m.txt) content += '<div>'+m.txt+'</div>';
+    if(m.extra){ content += m.extra; extraClass += ' has-options'; }
+  }
+  div.className = 'chat-message '+(m.s?'sent':'received')+extraClass;
   div.innerHTML = content+'<div class="chat-message-time">'+m.tm+'</div>';
   chatMessagesEl.appendChild(div);
   requestAnimationFrame(()=>chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight);
@@ -1136,13 +1367,13 @@ function sendMsg(){
   
   setTimeout(()=>{
     const replies = [
-      "Thank you for your message! Our team will get back to you shortly.",
-      "I understand. Let me check that for you.",
-      "Great question! I'll help you with that.",
-      "Thanks for reaching out. We're here to help!",
-      "Got it! " + ICONS.check + " I'll look into this for you.",
-      "Let me check our system for you. One moment please.",
-      "Appreciate you contacting us! We'll get this sorted."
+      "Thank you! We've received your submission. Our team is verifying your payment now.",
+      "Got it. Once verification is complete, your subscription will be activated.",
+      "Thanks for sending the details. Please allow a few minutes for confirmation.",
+      "Received. We'll process your payment and notify you shortly.",
+      "Thank you for sending the proof. Your subscription will be active once verified.",
+      "Got it! " + ICONS.check + " We're confirming your transaction now.",
+      "Appreciate your patience! We'll get this sorted shortly."
     ];
     const reply = replies[Math.floor(Math.random()*replies.length)];
     const rm = {txt:reply, s:false, tm:nowTime()};

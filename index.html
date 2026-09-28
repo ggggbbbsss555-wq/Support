@@ -623,6 +623,58 @@ body{background:var(--bg);color:var(--text)}
   background:var(--bg4);color:var(--text3);
   border:1px solid var(--border2);
 }
+/* Disabled (Verify before image uploaded): same look as submitted */
+.chat-card-cta:disabled{
+  background:var(--bg4);color:var(--text3);
+  border:1px solid var(--border2);
+}
+
+/* ===== Image Upload Flow (for TRC20/BEP20 payment proofs) ===== */
+.chat-card-upload-flow{
+  margin-top:6px;
+  display:flex;flex-direction:column;gap:8px;
+}
+.upload-zone{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:14px 12px;
+  background:var(--bg2);
+  border:2px dashed var(--border2);
+  border-radius:10px;
+  cursor:pointer;
+  transition:all 0.15s ease;
+  text-align:center;
+}
+.upload-zone:hover{
+  border-color:var(--accent);
+  background:rgba(0,210,255,0.04);
+}
+.upload-zone .upload-icon{
+  width:24px;height:24px;
+  stroke:var(--accent);fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;
+  margin-bottom:4px;
+}
+.upload-text{font-size:12px;font-weight:600;color:var(--text)}
+.upload-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.upload-preview{
+  position:relative;
+  border:1px solid var(--border2);
+  border-radius:10px;
+  overflow:hidden;
+  background:var(--bg2);
+}
+.upload-preview img{
+  display:block;width:100%;max-height:220px;object-fit:contain;
+}
+.upload-remove{
+  position:absolute;top:8px;right:8px;
+  width:26px;height:26px;border-radius:50%;
+  background:rgba(0,0,0,0.7);color:#fff;
+  border:none;cursor:pointer;font-size:18px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  padding:0;font-weight:400;
+}
+.upload-remove:hover{background:rgba(0,0,0,0.85)}
 
 .chat-input-area{
   position:relative;
@@ -1326,9 +1378,10 @@ function selectPaymentMethod(method){
           '</div>'
         : '');
     
-    // The "I've Paid" button (always shown at the bottom of the card)
+    // The "I've Paid" button (always shown at the bottom of the card).
+    // Pass the method so confirmPayment knows whether to show image upload (TRC20/BEP20) or submit immediately (Binance).
     const paidBtn =
-      '<button class="chat-card-cta" onclick="confirmPayment(this)">' +
+      '<button class="chat-card-cta" onclick="confirmPayment(this, \''+method+'\')">' +
         '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' +
         '<span>I\'ve Paid</span>' +
       '</button>';
@@ -1394,17 +1447,112 @@ function selectPaymentMethod(method){
   }, 600);
 }
 
-/* ===== Confirm Payment: notify user that their payment will be verified ===== */
-function confirmPayment(btn){
-  // Prevent double-clicks
+/* ===== Confirm Payment flow =====
+   - Binance Pay: immediate submit (uses code-based verification)
+   - TRC20 / BEP20: show image upload box → user uploads screenshot → click Verify → submit
+*/
+function confirmPayment(btn, method){
   if(btn.classList.contains('submitted')) return;
   
-  // Mark button as submitted (disabled, muted visual state)
-  btn.classList.add('submitted');
-  btn.disabled = true;
-  btn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Submitted</span>';
+  if(method && method !== 'binance'){
+    // For TRC20/BEP20: show the image upload flow first
+    showPaymentUploadFlow(btn);
+    return;
+  }
   
-  // Push a single chat message: "Your payment will be verified"
+  // For Binance Pay: submit immediately
+  submitPaymentVerification(btn, null, null);
+}
+
+/* Show the image upload box in place of the clicked "I've Paid" button */
+function showPaymentUploadFlow(btn){
+  const container = document.createElement('div');
+  container.className = 'chat-card-upload-flow';
+  container.innerHTML =
+    '<label class="upload-zone">' +
+      '<svg class="upload-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>' +
+      '<div class="upload-text">Upload payment screenshot</div>' +
+      '<div class="upload-sub">Click to choose file</div>' +
+      '<input type="file" accept="image/*" onchange="handlePaymentProof(this)" style="display:none">' +
+    '</label>' +
+    '<div class="upload-preview" style="display:none">' +
+      '<img alt="Payment proof">' +
+      '<button type="button" class="upload-remove" onclick="clearPaymentProof(this)">\u00d7</button>' +
+    '</div>' +
+    '<button type="button" class="chat-card-cta verify-btn" disabled>' +
+      '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' +
+      '<span>Verify</span>' +
+    '</button>';
+  
+  // Wire up the Verify button via event listener (container is dynamic)
+  const verifyBtn = container.querySelector('.verify-btn');
+  verifyBtn.addEventListener('click', function(){
+    const previewImg = container.querySelector('.upload-preview img');
+    const imgData = previewImg.src;
+    submitPaymentVerification(verifyBtn, imgData, container);
+  });
+  
+  btn.replaceWith(container);
+}
+
+/* Handle file selection from the upload zone */
+function handlePaymentProof(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')){
+    showToast('Please select an image file');
+    input.value = '';
+    return;
+  }
+  const container = input.closest('.chat-card-upload-flow');
+  if(!container) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const preview = container.querySelector('.upload-preview');
+    const previewImg = preview.querySelector('img');
+    previewImg.src = e.target.result;
+    preview.style.display = 'block';
+    container.querySelector('.upload-zone').style.display = 'none';
+    container.querySelector('.verify-btn').disabled = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+/* Remove the uploaded image and reset the upload zone */
+function clearPaymentProof(removeBtn){
+  const container = removeBtn.closest('.chat-card-upload-flow');
+  if(!container) return;
+  const preview = container.querySelector('.upload-preview');
+  preview.style.display = 'none';
+  preview.querySelector('img').src = '';
+  const input = container.querySelector('input[type=file]');
+  if(input) input.value = '';
+  container.querySelector('.upload-zone').style.display = 'flex';
+  container.querySelector('.verify-btn').disabled = true;
+}
+
+/* Final step: replace button (or upload-flow container) with a Submitted button,
+   then push the proof image (if any) and the verification message. */
+function submitPaymentVerification(btn, imgData, containerToReplace){
+  const submittedBtn = document.createElement('button');
+  submittedBtn.className = 'chat-card-cta submitted';
+  submittedBtn.disabled = true;
+  submittedBtn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Submitted</span>';
+  
+  if(containerToReplace){
+    containerToReplace.replaceWith(submittedBtn);
+  } else if(btn){
+    btn.replaceWith(submittedBtn);
+  }
+  
+  // If a proof image was uploaded (TRC20/BEP20), push it as a user-sent chat message first
+  if(imgData){
+    const proofMsg = {txt:'', img:imgData, s:true, tm:nowTime()};
+    State.chatMessages.push(proofMsg);
+    appendChatMsg(proofMsg);
+  }
+  
+  // Push the bot's verification acknowledgment (single message)
   const ack = {txt: ICONS.check + ' Got it! <b>Your payment will be verified.</b> We will notify you in this chat once the transaction is confirmed on the blockchain.', s:false, tm:nowTime()};
   State.chatMessages.push(ack);
   appendChatMsg(ack);

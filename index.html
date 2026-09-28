@@ -1236,9 +1236,26 @@ function closePurchaseModal(){
   document.getElementById('purchaseModal').classList.remove('active');
   State.currentPurchasePlan = null;
 }
+
+/* Reset chat state when the user starts a new purchase (clicks "Choose [Plan]"
+   then either skips the discount modal or applies a valid code).
+   This ensures the "Select a payment method" intro + buttons are re-sent fresh
+   every single time the user enters the chat via the purchase flow. */
+function resetChatForNewPurchase(){
+  // Clear previous chat history so openChat() re-pushes the intro with payment buttons
+  State.chatMessages = [];
+  State.selectedPaymentMethod = null;
+  // Clear any pending chat-input image attachment (paperclip)
+  if(State.uploadedImage){
+    State.uploadedImage = null;
+    const preview = document.getElementById('imagePreview');
+    if(preview) preview.classList.remove('active');
+  }
+}
 function skipDiscount(){
   State.appliedDiscount = null;  // no discount when skipping
   closePurchaseModal();
+  resetChatForNewPurchase();  // start a fresh chat so payment buttons are re-sent
   openChat();
 }
 function applyDiscount(){
@@ -1270,7 +1287,7 @@ function applyDiscount(){
     if(result){
       State.appliedDiscount = result;
       showToast('Code "' + result.code + '" applied — ' + result.label + '!', ICONS.sparkles);
-      setTimeout(()=>{ closePurchaseModal(); openChat(); }, 900);
+      setTimeout(()=>{ closePurchaseModal(); resetChatForNewPurchase(); openChat(); }, 900);
     } else {
       State.appliedDiscount = null;
       showToast('Invalid discount code: "' + code + '"');

@@ -578,6 +578,51 @@ body{background:var(--bg);color:var(--text)}
 }
 .chat-card-hint b{color:var(--accent);font-weight:700}
 
+/* ===== Summary Rows (Plan / Discount) ===== */
+.chat-card-row.summary{background:rgba(0,210,255,0.04);border-color:rgba(0,210,255,0.2)}
+.chat-card-row.summary .chat-card-row-label{color:var(--accent)}
+.chat-card-row.summary .chat-card-row-value{color:var(--text);font-family:inherit;font-size:12.5px}
+.chat-card-row.discount{background:rgba(255,170,0,0.05);border-color:rgba(255,170,0,0.25)}
+.chat-card-row.discount .chat-card-row-label{color:var(--gold)}
+.chat-card-row.discount .chat-card-row-value{color:var(--gold);font-family:inherit;font-size:12.5px}
+
+/* ===== Payment Confirmation Button (I've Paid) ===== */
+.chat-card-cta{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:11px 14px;margin-top:6px;
+  border:none;border-radius:10px;
+  background:linear-gradient(180deg,#00cc6a 0%,#00994f 100%);
+  color:#fff;font-weight:700;font-size:13.5px;
+  cursor:pointer;font-family:inherit;
+  transition:all 0.2s ease;
+}
+.chat-card-cta:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,204,106,0.3)}
+.chat-card-cta:active{transform:translateY(0) scale(0.98)}
+.chat-card-cta:disabled{cursor:not-allowed;transform:none}
+.chat-card-cta svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.chat-card-cta.verifying{
+  background:var(--bg4);color:var(--text2);
+  border:1px solid var(--border2);
+}
+.chat-card-cta.verifying .spinner{
+  width:14px;height:14px;border:2px solid rgba(255,255,255,0.15);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:spin 0.8s linear infinite;display:inline-block;
+}
+.chat-card-cta.upgrading{
+  background:linear-gradient(180deg,var(--gold) 0%,#cc8800 100%);color:#000;
+}
+.chat-card-cta.upgrading .spinner{
+  width:14px;height:14px;border:2px solid rgba(0,0,0,0.2);
+  border-top-color:#000;border-radius:50%;
+  animation:spin 0.8s linear infinite;display:inline-block;
+}
+.chat-card-cta.done{
+  background:var(--bg3);color:var(--success);
+  border:1px solid rgba(0,255,136,0.4);
+}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
 .chat-input-area{
   position:relative;
   display:flex;align-items:flex-end;gap:8px;
@@ -1066,6 +1111,30 @@ const PAYMENT_CONFIG = {
   }
 };
 
+/* ===== Plan Info (for auto-display in payment card) ===== */
+const PLAN_INFO = {
+  basic: {name:'Basic', price:'$50/mo'},
+  pro:   {name:'Pro',   price:'$75/mo'},
+  elite: {name:'Elite', price:'$100/mo'}
+};
+
+/* ===== Discount Code Database (simulated) =====
+   Replace `validateDiscountCode()` with a real fetch() to your backend in production.
+*/
+const DISCOUNT_DB = {
+  'SAVE10':    {percent:10,  label:'10% off'},
+  'WELCOME20': {percent:20,  label:'20% off'},
+  'PRO50':     {percent:50,  label:'50% off'},
+  'VIP100':    {percent:100, label:'100% off'}
+};
+function validateDiscountCode(code){
+  // Simulates a database lookup. Returns the discount object or null.
+  // Replace with: fetch('/api/validate-discount?code='+code).then(r=>r.json())
+  if(!code) return null;
+  const found = DISCOUNT_DB[code.toUpperCase()];
+  return found ? {code:code.toUpperCase(), percent:found.percent, label:found.label} : null;
+}
+
 /* ===== State ===== */
 const State = {
   selectedPlan:'pro',
@@ -1073,7 +1142,8 @@ const State = {
   uploadedImage:null,
   chatMessages:[],
   supportFollowUpTimer:null,
-  selectedPaymentMethod:null
+  selectedPaymentMethod:null,
+  appliedDiscount:null  // {code, percent, label} or null
 };
 
 /* ===== Toast ===== */
@@ -1095,6 +1165,7 @@ function nowTime(){
 /* ===== Purchase Modal ===== */
 function openPurchaseModal(planId){
   State.currentPurchasePlan = planId;
+  State.appliedDiscount = null;  // reset on fresh open
   document.getElementById('purchaseModal').classList.add('active');
   document.getElementById('discountCodeInput').value = '';
   setTimeout(()=>document.getElementById('discountCodeInput').focus(), 300);
@@ -1104,24 +1175,48 @@ function closePurchaseModal(){
   State.currentPurchasePlan = null;
 }
 function skipDiscount(){
+  State.appliedDiscount = null;  // no discount when skipping
   closePurchaseModal();
   openChat();
 }
 function applyDiscount(){
-  const code = document.getElementById('discountCodeInput').value.trim();
-  if(code){
-    showToast('Discount code applied!', ICONS.sparkles);
-    setTimeout(()=>{closePurchaseModal(); openChat();}, 800);
-  } else {
+  const inputEl = document.getElementById('discountCodeInput');
+  const code = inputEl.value.trim();
+  if(!code){
     showToast('Please enter a discount code');
-    const input = document.getElementById('discountCodeInput');
-    input.style.borderColor = 'var(--like)';
-    input.style.animation = 'shake 0.4s ease';
-    setTimeout(()=>{
-      input.style.borderColor = '';
-      input.style.animation = '';
-    }, 500);
+    inputEl.style.borderColor = 'var(--like)';
+    inputEl.style.animation = 'shake 0.4s ease';
+    setTimeout(()=>{ inputEl.style.borderColor = ''; inputEl.style.animation = ''; }, 500);
+    return;
   }
+  
+  // Show "Verifying..." state on the Apply button
+  const applyBtn = document.querySelector('.discount-btn-apply');
+  const applyBtnSpan = applyBtn.querySelector('span');
+  const originalText = applyBtnSpan.textContent;
+  applyBtnSpan.textContent = 'Verifying...';
+  applyBtn.style.opacity = '0.7';
+  applyBtn.style.pointerEvents = 'none';
+  
+  // Simulate database lookup (replace with real fetch() in production)
+  setTimeout(()=>{
+    applyBtnSpan.textContent = originalText;
+    applyBtn.style.opacity = '';
+    applyBtn.style.pointerEvents = '';
+    
+    const result = validateDiscountCode(code);
+    if(result){
+      State.appliedDiscount = result;
+      showToast('Code "' + result.code + '" applied — ' + result.label + '!', ICONS.sparkles);
+      setTimeout(()=>{ closePurchaseModal(); openChat(); }, 900);
+    } else {
+      State.appliedDiscount = null;
+      showToast('Invalid discount code: "' + code + '"');
+      inputEl.style.borderColor = 'var(--like)';
+      inputEl.style.animation = 'shake 0.4s ease';
+      setTimeout(()=>{ inputEl.style.borderColor = ''; inputEl.style.animation = ''; }, 500);
+    }
+  }, 1000);
 }
 
 /* ===== Chat ===== */
@@ -1203,6 +1298,31 @@ function selectPaymentMethod(method){
   // After a short delay, push the payment instruction card
   setTimeout(()=>{
     const copySvg = '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+    // Determine the plan being purchased (auto-display in card)
+    const planId = State.currentPurchasePlan || State.selectedPlan || 'pro';
+    const planInfo = PLAN_INFO[planId] || {name:planId, price:''};
+    const discount = State.appliedDiscount;
+    
+    // Build the summary rows (Plan + optional Discount) that appear at the top of the card body
+    const summaryRows =
+      '<div class="chat-card-row summary">' +
+        '<span class="chat-card-row-label">Plan</span>' +
+        '<span class="chat-card-row-value">'+escapeHtml(planInfo.name)+' — '+escapeHtml(planInfo.price)+'</span>' +
+      '</div>' +
+      (discount
+        ? '<div class="chat-card-row discount">' +
+            '<span class="chat-card-row-label">Discount</span>' +
+            '<span class="chat-card-row-value">'+escapeHtml(discount.code)+' ('+escapeHtml(discount.label)+')</span>' +
+          '</div>'
+        : '');
+    
+    // The "I've Paid" button (always shown at the bottom of the card)
+    const paidBtn =
+      '<button class="chat-card-cta" onclick="confirmPayment(this)">' +
+        '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' +
+        '<span>I\'ve Paid</span>' +
+      '</button>';
+    
     let cardHtml = '';
     if(method === 'binance'){
       const code = generateCode(6);
@@ -1213,6 +1333,7 @@ function selectPaymentMethod(method){
             '<span class="chat-card-title">'+cfg.label+'</span>' +
           '</div>' +
           '<div class="chat-card-body">' +
+            summaryRows +
             '<div class="chat-card-row">' +
               '<span class="chat-card-row-label">Binance Pay ID</span>' +
               '<div class="chat-card-row-actions">' +
@@ -1227,7 +1348,8 @@ function selectPaymentMethod(method){
                 '<button class="chat-card-copy" data-copy="'+escapeHtml(code)+'">'+copySvg+'</button>' +
               '</div>' +
             '</div>' +
-            '<div class="chat-card-hint">Send the <b>Verification Code</b> above via Binance Pay to the <b>Binance Pay ID</b> shown on the left. Once the transfer is done, type "sent" or send a screenshot here to confirm.</div>' +
+            '<div class="chat-card-hint">Send the <b>Verification Code</b> above via Binance Pay to the <b>Binance Pay ID</b> shown on the left, then click <b>I\'ve Paid</b> below to verify your payment.</div>' +
+            paidBtn +
           '</div>' +
         '</div>';
     } else {
@@ -1239,6 +1361,7 @@ function selectPaymentMethod(method){
             '<span class="chat-card-title">'+cfg.label+'</span>' +
           '</div>' +
           '<div class="chat-card-body">' +
+            summaryRows +
             '<div class="chat-card-row">' +
               '<span class="chat-card-row-label">Network</span>' +
               '<span class="chat-card-row-value">'+network+'</span>' +
@@ -1250,7 +1373,8 @@ function selectPaymentMethod(method){
                 '<button class="chat-card-copy" data-copy="'+escapeHtml(cfg.wallet)+'">'+copySvg+'</button>' +
               '</div>' +
             '</div>' +
-            '<div class="chat-card-hint">Send your <b>USDT</b> to the wallet address above, then attach a screenshot of the transaction in this chat to confirm.</div>' +
+            '<div class="chat-card-hint">Send your <b>USDT</b> to the wallet address above, then click <b>I\'ve Paid</b> below to verify your payment.</div>' +
+            paidBtn +
           '</div>' +
         '</div>';
     }
@@ -1258,6 +1382,61 @@ function selectPaymentMethod(method){
     State.chatMessages.push(cardMsg);
     appendChatMsg(cardMsg);
   }, 600);
+}
+
+/* ===== Confirm Payment: verify on blockchain then upgrade plan ===== */
+function confirmPayment(btn){
+  // Prevent double-clicks once flow has started
+  if(btn.classList.contains('verifying') || btn.classList.contains('upgrading') || btn.classList.contains('done')) return;
+  
+  const planId = State.currentPurchasePlan || State.selectedPlan || 'pro';
+  const planInfo = PLAN_INFO[planId] || {name:planId, price:''};
+  const discount = State.appliedDiscount;
+  
+  // State 1: Verifying...
+  btn.classList.add('verifying');
+  btn.innerHTML = '<span class="spinner"></span><span>Verifying...</span>';
+  btn.disabled = true;
+  
+  // Push a chat message: payment received, verifying
+  setTimeout(()=>{
+    const ack = {txt:'Payment received. Verifying your transaction on the blockchain...', s:false, tm:nowTime()};
+    State.chatMessages.push(ack);
+    appendChatMsg(ack);
+  }, 400);
+  
+  // State 2: Verified — Upgrading...
+  setTimeout(()=>{
+    btn.classList.remove('verifying');
+    btn.classList.add('upgrading');
+    btn.innerHTML = '<span class="spinner"></span><span>Upgrading your plan...</span>';
+    
+    const verified = {txt: ICONS.check + ' <b>Payment verified!</b> Upgrading your subscription now...', s:false, tm:nowTime()};
+    State.chatMessages.push(verified);
+    appendChatMsg(verified);
+  }, 2500);
+  
+  // State 3: Done — success message
+  setTimeout(()=>{
+    btn.classList.remove('upgrading');
+    btn.classList.add('done');
+    btn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><span>Upgrade complete</span>';
+    btn.disabled = true;
+    
+    let successTxt = '<b>Congratulations!</b><br>Your <b>' + escapeHtml(planInfo.name) + '</b> subscription is now active.';
+    if(discount){
+      successTxt += ' Discount code <b>' + escapeHtml(discount.code) + '</b> (' + escapeHtml(discount.label) + ') was applied to this purchase.';
+    }
+    successTxt += '<br>Enjoy your upgraded experience!';
+    
+    const success = {txt: successTxt, s:false, tm:nowTime()};
+    State.chatMessages.push(success);
+    appendChatMsg(success);
+    
+    // Update the selected plan in state (UI plan-card highlight could be refreshed here)
+    State.selectedPlan = planId;
+    showToast('Upgrade complete!', ICONS.check);
+  }, 4500);
 }
 
 function copyToClipboard(btn, text){

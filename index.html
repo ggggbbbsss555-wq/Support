@@ -1820,6 +1820,52 @@ document.getElementById('purchaseModal').addEventListener('click', function(e){
 
 /* ===== Init ===== */
 autoGrowTextarea();
+
+/* ===== Telegram User Data Integration ===== */
+var TgUser = null;
+function initTelegramUser(){
+  var p = new URLSearchParams(location.search);
+  var tgId = p.get('tg_id');
+  if(tgId){
+    TgUser = {
+      id: tgId,
+      name: p.get('tg_name') || 'Trader',
+      firstName: p.get('tg_first') || '',
+      lastName: p.get('tg_last') || '',
+      username: p.get('tg_username') || '',
+      photoUrl: p.get('tg_photo') || '',
+      language: p.get('tg_lang') || 'en',
+      platform: p.get('tg_platform') || 'QUOTEX'
+    };
+    // Store in State for use in purchase flow
+    if(typeof State !== 'undefined'){
+      State.tgUser = TgUser;
+    }
+    // Update any user display elements
+    updateUserDisplay();
+  }
+}
+
+function updateUserDisplay(){
+  if(!TgUser) return;
+  // Update header brand to show user name if element exists
+  var brandEls = document.querySelectorAll('.brand-name, .chat-header-name');
+  // Could add user-specific UI updates here
+}
+
+// Build purchase payload with user data (for sending to backend/bot)
+function buildPurchasePayload(planId, paymentMethod, discountCode){
+  return {
+    user: TgUser || {id:'guest', name:'Guest', username:'guest'},
+    plan: planId,
+    paymentMethod: paymentMethod,
+    discountCode: discountCode || null,
+    timestamp: Date.now(),
+    source: 'quantvexa_wallet'
+  };
+}
+
+initTelegramUser();
 </script>
 </body>
 </html>
